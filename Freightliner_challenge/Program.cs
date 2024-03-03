@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Headers;
-using System.Xml.Resolvers;
+﻿using System.Configuration;
 
 namespace Freightliner_challenge
 {
@@ -12,15 +11,28 @@ namespace Freightliner_challenge
             Console.WriteLine(@"|   // _ \|  _ \/ _ \|  _|      | _ \/ _ \/ _` || '_|/ _` |      | (_ |/ _` || '  \ / -_)");
             Console.WriteLine(@"|_|_\\___/|____/\___/ \__|      |___/\___/\__/_||_|  \__/_|       \___|\__/_||_|_|_|\___|");
 
-            Board board = new Board();
-            board.Setup();
+            int boardWidth = 0;
+            int boardHeight = 0;
 
-            Robot robot = new Robot();
+            // Load the board dimetions from the config file
+            try
+            {
+                boardWidth = Convert.ToInt32(ConfigurationManager.AppSettings["boardWidth"]);
+                boardHeight = Convert.ToInt32(ConfigurationManager.AppSettings["boardHeight"]);
+            }
+            catch
+            {
+                Console.WriteLine("Problem with config. Setting default board size of 3 x 3");
+                boardWidth = 3;
+                boardHeight = 3;
+            }
 
-            Game game = new Game(board, robot);
+            // Instantiate the components of the game
+            Board board = new Board(boardWidth, boardHeight);
+            UserInterface userInterface = new UserInterface();
+            Robot robot = new Robot(userInterface);
+            Game game = new Game(board, robot, userInterface);
             game.Play();
-
-
         }
     }
 }

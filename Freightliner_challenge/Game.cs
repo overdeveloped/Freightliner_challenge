@@ -1,79 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.ConstrainedExecution;
-using System.Text;
-using System.Threading.Tasks;
-using Freightliner_challenge.Enums;
+﻿using Freightliner_challenge.Enums;
 
 namespace Freightliner_challenge
 {
     internal class Game
     {
         private bool quit = false;
-        private bool startingLocationIsSet = false;
+        private bool robotIsPlaced = false;
         private readonly Board board;
         private readonly Robot robot;
+        private readonly UserInterface userInterface;
 
-        public Game(Board board, Robot robot)
+        public Game(Board board, Robot robot, UserInterface userInterface)
         {
             this.board = board;
             this.robot = robot;
+            this.userInterface = userInterface;
         }
 
+        // Game loop
         public void Play()
         {
+            userInterface.PromptUser();
+
             while (!quit)
             {
-                Console.WriteLine();
-                Console.WriteLine("Please enter instruction");
+                // Get user input. The user interface can be mocked and user input simulated for testing
+                string input = userInterface.GetUserInput();
 
-                string input = Console.ReadLine().ToUpper();
-                bool success = false;
+                // Check that the place command has been run first
+                if (!this.robotIsPlaced && !input.Split()[0].Equals("PLACE"))
+                {
+                    this.userInterface.RobotNotPlaced();
+                    continue;
+                }
 
-                //foreach (var item in Enum.GetNames(typeof(Instruction)))
-                //{
-                //    if (input.Split(' ')[0].Equals(item))
-                //    {
-                //        //CarryOutInstruction((int)Enum.Parse(typeof(Instruction), item));
-                //        success = true;
-                //        CarryOutInstruction(input);
-                //    }
-                //}
-
-                //if (!success)
-                //{
-                //}
                 CarryOutInstruction(input);
-
             }
         }
 
         private void CarryOutInstruction(string instruction)
         {
-            //PLACE,
-            //TURN,
-            //MOVE,
-            //PRINT,
-            //MAP,
-            //QUIT
-
-            //if (!this.startingLocationIsSet && !instruction.Contains("PLACE"))
-            //{
-            //    Console.WriteLine("Error: First instruction must be PLACE");
-            //    return;
-            //}
-
-            //Console.Clear();
-
+            // Check if the first word of the user input matches any of the known commands
             switch (instruction.Split()[0])
             {
                 case "PLACE":
                     Place(instruction);
                     break;
                 case "TURN":
-                    Turn(instruction);
+                    if (robotIsPlaced)
+                        Turn(instruction);
                     break;
                 case "MOVE":
                     Move(instruction);
@@ -81,14 +56,11 @@ namespace Freightliner_challenge
                 case "PRINT":
                     Print();
                     break;
-                case "MAP":
-                    board.Print();
-                    break;
                 case "QUIT":
                     Environment.Exit(0);
                     break;
                 default:
-                    InvalidResponse();
+                    this.userInterface.InvalidResponse();
                     break;
             }
         }
@@ -100,42 +72,17 @@ namespace Freightliner_challenge
 
             if (instArr.Length != 4)
             {
-                InvalidResponse();
+                this.userInterface.InvalidResponse();
                 return;
             }
 
             // Extract the direction
             CompassDirection direction = MatchCompassDirection(instArr[3], this.robot.GetCurrentDirection());
-            bool directionIsValid = false;
 
-            //foreach (var item in Enum.GetNames(typeof(CompassDirection)))
-            //{
-            //    if (instArr[3].Equals(item))
-            //    {
-            //        if (Enum.TryParse(item, out CompassDirection compDir))
-            //        {
-            //            direction = compDir;
-            //        }
-            //        else
-            //        {
-            //            InvalidResponse();
-            //            return;
-            //        }
-
-            //        directionIsValid = true;
-            //    }
-            //}
-
-            //if (!directionIsValid)
-            //{
-            //    InvalidResponse();
-            //    return;
-            //}
-
-            // Extract the location
             int x;
             int y;
 
+            // Extract the location
             // Check for non integer input
             try
             {
@@ -144,29 +91,24 @@ namespace Freightliner_challenge
             }
             catch
             {
-                InvalidResponse();
+                this.userInterface.InvalidResponse();
                 return;
             }
 
-            // Check that destination exists
+            // Check that the destination exists
             Cell cell = this.board.CheckCell(x, y);
 
-            if (cell != null)
+            if (cell == null)
             {
-                cell.Print();
-            }
-            else
-            {
-                InvalidResponse();
+                this.userInterface.InvalidResponse();
                 return;
             }
 
-            // Set location and direction for robot
-            this.robot.SetLocation(cell);
-
-            this.robot.SetDirection(direction);
-
-            this.startingLocationIsSet = true;
+            // Set new location and direction for robot
+            this.robot.SetCurrentLocation(cell);
+            this.robot.SetCurrentDirection(direction);
+            this.robot.SetIsPlaced(true);
+            this.robotIsPlaced = true;
         }
 
         private void Turn(string instruction)
@@ -175,13 +117,11 @@ namespace Freightliner_challenge
 
             if (instArr.Length != 2)
             {
-                InvalidResponse();
+                this.userInterface.InvalidResponse();
                 return;
             }
 
-            this.robot.SetDirection(MatchCompassDirection(instArr[1], this.robot.GetCurrentDirection()));
-
-
+            this.robot.SetCurrentDirection(MatchCompassDirection(instArr[1], this.robot.GetCurrentDirection()));
         }
 
         private void Move(string instruction)
@@ -190,38 +130,27 @@ namespace Freightliner_challenge
 
             if (instArr.Length != 1)
             {
-                InvalidResponse();
+                this.userInterface.InvalidResponse();
                 return;
             }
-
 
             int robotX = this.robot.GetCurrentLocation().GetLocation().Item1;
             int robotY = this.robot.GetCurrentLocation().GetLocation().Item2;
 
             CompassDirection robotDir = this.robot.GetCurrentDirection();
 
-
             if (robotDir.Equals(CompassDirection.NORTH))
             {
-
                 Cell destination = board.CheckCell(robotX + 1, robotY);
 
                 if (destination != null)
                 {
-                    this.robot.SetLocation(destination);
+                    this.robot.SetCurrentLocation(destination);
                 }
                 else
                 {
-                    Console.WriteLine("Stop! Going to fall!");
+                    this.userInterface.EdgeWarning();
                 }
-                //if (robotX + 1 >= this.board.GetHeight())
-                //{
-                //    Console.WriteLine("NO");
-                //}
-                //else
-                //{
-                //    this.robot.SetLocation()
-                //}
             }
 
             if (robotDir.Equals(CompassDirection.EAST))
@@ -230,11 +159,11 @@ namespace Freightliner_challenge
 
                 if (destination != null)
                 {
-                    this.robot.SetLocation(destination);
+                    this.robot.SetCurrentLocation(destination);
                 }
                 else
                 {
-                    Console.WriteLine("Stop! Going to fall!");
+                    this.userInterface.EdgeWarning();
                 }
 
             }
@@ -245,11 +174,11 @@ namespace Freightliner_challenge
 
                 if (destination != null)
                 {
-                    this.robot.SetLocation(destination);
+                    this.robot.SetCurrentLocation(destination);
                 }
                 else
                 {
-                    Console.WriteLine("Stop! Going to fall!");
+                    this.userInterface.EdgeWarning();
                 }
 
             }
@@ -260,17 +189,13 @@ namespace Freightliner_challenge
 
                 if (destination != null)
                 {
-                    this.robot.SetLocation(destination);
+                    this.robot.SetCurrentLocation(destination);
                 }
                 else
                 {
-                    Console.WriteLine("Stop! Going to fall!");
+                    this.userInterface.EdgeWarning();
                 }
-
             }
-
-
-
         }
 
         public void Print()
@@ -278,20 +203,16 @@ namespace Freightliner_challenge
             this.robot.PrintStatus();
         }
 
-        private void InvalidResponse()
-        {
-            Console.WriteLine("invalid instruction");
-        }
-
         private CompassDirection MatchCompassDirection(string input, CompassDirection previousDirection)
         {
-            // TODO: Revisit
+            // Match the user input with a compass direction. If there isn't a match send back the existing direction
             if (Enum.TryParse(input, out CompassDirection compDir))
             {
                 return compDir;
             }
             else
             {
+                this.userInterface.InvalidResponse();
                 return previousDirection;
             }
 

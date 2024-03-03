@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace Freightliner_challenge
 {
     internal class Cell
@@ -19,11 +14,5 @@ namespace Freightliner_challenge
         {
             return this.location;
         }
-
-        public void Print()
-        {
-            Console.Write($"({this.location.Item1}, {this.location.Item2})");
-        }
-
     }
 }

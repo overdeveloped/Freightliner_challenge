@@ -1,19 +1,28 @@
 ﻿using Freightliner_challenge.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Freightliner_challenge
 {
     internal class Robot
     {
-        private Cell currentCell;
+        private bool isPlaced = false;
+        private Cell? currentCell;
         private CompassDirection currentDirection;
+        private readonly UserInterface userInterface;
 
-        public Robot()
+        public Robot(UserInterface userInterface)
         {
+            this.userInterface = userInterface;
+        }
+
+        public bool GetIsPlaced()
+        {
+            return this.isPlaced;
+        }
+
+        public void SetIsPlaced(bool isPlaced)
+        {
+            this.isPlaced = isPlaced;
         }
 
         public Cell GetCurrentLocation()
@@ -21,7 +30,7 @@ namespace Freightliner_challenge
             return this.currentCell;
         }
 
-        public void SetLocation(Cell currentCell)
+        public void SetCurrentLocation(Cell currentCell)
         {
             this.currentCell = currentCell;
         }
@@ -31,14 +40,30 @@ namespace Freightliner_challenge
             return this.currentDirection;
         }
 
-        public void SetDirection(CompassDirection currentDirection)
+        public void SetCurrentDirection(CompassDirection currentDirection)
         {
             this.currentDirection = currentDirection;
         }
 
         public void PrintStatus()
         {
-            Console.WriteLine($"Location: {this.currentCell.GetLocation().Item1}, {this.currentCell.GetLocation().Item2} Direction: {this.currentDirection.ToString()}");
+            // Gather position and direction and pass to the user interface
+            StringBuilder sb = new StringBuilder();
+
+            if (this.isPlaced)
+            {
+                sb.Append(this.currentCell.GetLocation().Item1.ToString());
+                sb.Append(" ");
+                sb.Append(this.currentCell.GetLocation().Item2.ToString());
+                sb.Append(" ");
+                sb.Append(this.currentDirection.ToString());
+
+                this.userInterface.Print(sb.ToString());
+            }
+            else
+            {
+                this.userInterface.Print("The robot has not been placed yet");
+            }
         }
     }
 }
